@@ -54,7 +54,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
   private final String name;
   private final ExtensionModel extensionModel;
   private final ConfigurationModel configurationModel;
-  private final List<ConfigurationInstance> configurationInstances = new LinkedList<>();
+  private final List<Object> registeredConfigurationObjects = new LinkedList<>();
   private final ClassLoader extensionClassLoader;
   protected final SimpleLifecycleManager lifecycleManager;
   protected final MuleContext muleContext;
@@ -79,7 +79,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
   public void initialise() throws InitialisationException {
     withContextClassLoader(extensionClassLoader, () -> {
       lifecycleManager.fireInitialisePhase((phaseName, object) -> {
-        for (ConfigurationInstance configurationInstance : configurationInstances) {
+        for (Object configurationInstance : registeredConfigurationObjects) {
           initialiseIfNeeded(configurationInstance, true, muleContext);
         }
         doInitialise();
@@ -104,7 +104,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
   public void start() throws MuleException {
     withContextClassLoader(extensionClassLoader, () -> {
       lifecycleManager.fireStartPhase((phaseName, object) -> {
-        for (ConfigurationInstance configurationInstance : configurationInstances) {
+        for (Object configurationInstance : registeredConfigurationObjects) {
           startConfig(configurationInstance);
         }
       });
@@ -123,7 +123,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
   public void stop() throws MuleException {
     withContextClassLoader(extensionClassLoader, () -> {
       lifecycleManager.fireStopPhase((phaseName, object) -> {
-        for (ConfigurationInstance configurationInstance : configurationInstances) {
+        for (Object configurationInstance : registeredConfigurationObjects) {
           stopIfNeeded(configurationInstance);
         }
       });
@@ -141,7 +141,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
     try {
       withContextClassLoader(extensionClassLoader, () -> {
         lifecycleManager.fireDisposePhase((phaseName, object) -> {
-          for (ConfigurationInstance configurationInstance : configurationInstances) {
+          for (Object configurationInstance : registeredConfigurationObjects) {
             disposeIfNeeded(configurationInstance, LOGGER);
           }
         });
@@ -159,7 +159,17 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
    * @param configuration a newly created {@link ConfigurationInstance}
    */
   protected void registerConfiguration(ConfigurationInstance configuration) {
-    configurationInstances.add(configuration);
+    registeredConfigurationObjects.add(configuration);
+  }
+
+  /**
+   * Implementations are to invoke this method everytime they create a new {@link ConfigurationProvider} so that they're kept
+   * track of and the lifecycle can be propagated
+   *
+   * @param configurationProvider a newly created {@link ConfigurationProvider}
+   */
+  protected void registerConfigurationProvider(ConfigurationProvider configurationProvider) {
+    registeredConfigurationObjects.add(configurationProvider);
   }
 
   /**
@@ -171,7 +181,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
    *
    */
   protected boolean unRegisterConfiguration(ConfigurationInstance configuration) {
-    return configurationInstances.remove(configuration);
+    return registeredConfigurationObjects.remove(configuration);
   }
 
   /**
@@ -198,7 +208,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
     return extensionModel;
   }
 
-  protected void startConfig(ConfigurationInstance config) throws MuleException {
+  protected void startConfig(Object config) throws MuleException {
     startIfNeeded(config);
   }
 

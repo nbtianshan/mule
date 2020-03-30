@@ -50,7 +50,8 @@ class XmlSdkConfigurationProviderFactory extends AbstractExtensionObjectFactory<
       rawParams.put(entry.getKey(), entry.getValue().toString());
     }
 
-    return new XmlSdkConfigurationProvider(configName.get(), innerConfigProviders, rawParams, extensionModel, configurationModel);
+    return new XmlSdkConfigurationProvider(configName.get(), innerConfigProviders, rawParams, extensionModel, configurationModel,
+                                           muleContext);
   }
 
   public List<ConfigurationProvider> getInnerConfigProviders() {

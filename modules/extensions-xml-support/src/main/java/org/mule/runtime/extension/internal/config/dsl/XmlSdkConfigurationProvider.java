@@ -6,12 +6,13 @@
  */
 package org.mule.runtime.extension.internal.config.dsl;
 
-import org.mule.runtime.api.component.AbstractComponent;
 import org.mule.runtime.api.event.Event;
 import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.api.meta.model.config.ConfigurationModel;
+import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.extension.api.runtime.config.ConfigurationInstance;
 import org.mule.runtime.extension.api.runtime.config.ConfigurationProvider;
+import org.mule.runtime.module.extension.internal.runtime.config.LifecycleAwareConfigurationProvider;
 
 import java.util.List;
 import java.util.Map;
@@ -21,26 +22,22 @@ import java.util.Map;
  *
  * @since 4.3
  */
-public class XmlSdkConfigurationProvider extends AbstractComponent implements ConfigurationProvider {
+public class XmlSdkConfigurationProvider extends LifecycleAwareConfigurationProvider {
 
-  private final String name;
   private final List<ConfigurationProvider> innerConfigProviders;
   private final Map<String, String> parameters;
-  private final ExtensionModel extensionModel;
-  private final ConfigurationModel configurationModel;
 
   public XmlSdkConfigurationProvider(String name,
                                      List<ConfigurationProvider> innerConfigProviders,
                                      Map<String, String> parameters,
                                      ExtensionModel extensionModel,
-                                     ConfigurationModel configurationModel) {
-    this.name = name;
+                                     ConfigurationModel configurationModel,
+                                     MuleContext muleContext) {
+    super(name, extensionModel, configurationModel, muleContext);
+    innerConfigProviders.forEach(this::registerConfigurationProvider);
     this.innerConfigProviders = innerConfigProviders;
     this.parameters = parameters;
-    this.extensionModel = extensionModel;
-    this.configurationModel = configurationModel;
   }
-
 
   public Map<String, String> getParameters() {
     return parameters;
@@ -48,27 +45,12 @@ public class XmlSdkConfigurationProvider extends AbstractComponent implements Co
 
   @Override
   public ConfigurationInstance get(Event event) {
-    return new XmlSdkCompositeConfigurationInstance(name, configurationModel, innerConfigProviders, event);
+    return new XmlSdkCompositeConfigurationInstance(getName(), getConfigurationModel(), innerConfigProviders, event);
   }
 
   @Override
   public boolean isDynamic() {
     return false;
-  }
-
-  @Override
-  public ExtensionModel getExtensionModel() {
-    return extensionModel;
-  }
-
-  @Override
-  public ConfigurationModel getConfigurationModel() {
-    return configurationModel;
-  }
-
-  @Override
-  public String getName() {
-    return this.name;
   }
 
 }
