@@ -105,7 +105,7 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
     withContextClassLoader(extensionClassLoader, () -> {
       lifecycleManager.fireStartPhase((phaseName, object) -> {
         for (Object configurationInstance : registeredConfigurationObjects) {
-          startConfig(configurationInstance);
+          unsafeStartConfig(configurationInstance);
         }
       });
       return null;
@@ -208,7 +208,11 @@ public abstract class LifecycleAwareConfigurationProvider extends AbstractCompon
     return extensionModel;
   }
 
-  protected void startConfig(Object config) throws MuleException {
+  protected void startConfig(ConfigurationInstance config) throws MuleException {
+    unsafeStartConfig(config);
+  }
+
+  private void unsafeStartConfig(Object config) throws MuleException {
     startIfNeeded(config);
   }
 
