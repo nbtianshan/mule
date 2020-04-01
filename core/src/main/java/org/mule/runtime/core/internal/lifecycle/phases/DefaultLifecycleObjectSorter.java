@@ -6,11 +6,16 @@
  */
 package org.mule.runtime.core.internal.lifecycle.phases;
 
+import static java.util.Collections.newSetFromMap;
 import org.mule.runtime.core.internal.registry.Registry;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Default implementation of {@link LifecycleObjectSorter}.
@@ -75,13 +80,13 @@ public class DefaultLifecycleObjectSorter implements LifecycleObjectSorter {
    */
   @Override
   public List<Object> getSortedObjects() {
-    List<Object> sorted = new ArrayList<>(objectCount);
+    Set<Object> sorted = newSetFromMap(new LinkedHashMap<>(objectCount));
     for (List<Object> bucket : buckets) {
       if (bucket != null) {
         sorted.addAll(bucket);
       }
     }
 
-    return sorted;
+    return new ArrayList<>(sorted);
   }
 }
