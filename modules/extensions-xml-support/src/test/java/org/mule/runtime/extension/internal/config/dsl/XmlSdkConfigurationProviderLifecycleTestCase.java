@@ -9,15 +9,18 @@ package org.mule.runtime.extension.internal.config.dsl;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.sort;
 import static java.util.Collections.unmodifiableList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+import static org.mule.runtime.core.api.config.MuleDeploymentProperties.MULE_LAZY_INIT_DEPLOYMENT_PROPERTY;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.disposeIfNeeded;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.initialiseIfNeeded;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.startIfNeeded;
 import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.stopIfNeeded;
+import org.mule.runtime.api.component.ConfigurationProperties;
 import org.mule.runtime.api.lifecycle.Disposable;
 import org.mule.runtime.api.lifecycle.Initialisable;
 import org.mule.runtime.api.lifecycle.Lifecycle;
@@ -27,11 +30,14 @@ import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.api.meta.model.config.ConfigurationModel;
 import org.mule.runtime.core.api.Injector;
 import org.mule.runtime.core.api.MuleContext;
+import org.mule.runtime.extension.api.annotation.param.Config;
 import org.mule.runtime.extension.api.runtime.config.ConfigurationProvider;
 
 import com.google.common.collect.ImmutableList;
 
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Test;
 
@@ -54,6 +60,18 @@ public class XmlSdkConfigurationProviderLifecycleTestCase {
 
     XmlSdkConfigurationProvider provider =
         new XmlSdkConfigurationProvider(name, innerConfigProviders, emptyMap(), extensionModel, configurationModel, muleContext);
+
+    ConfigurationProperties configurationProperties = mock(ConfigurationProperties.class);
+
+    when(configurationProperties.resolveBooleanProperty(eq(MULE_LAZY_INIT_DEPLOYMENT_PROPERTY))).thenReturn(Optional.of(true));
+
+    when(injector.inject(eq(provider))).then(s -> {
+      ConfigurationProvider configurationProvider = s.getArgument(0);
+      Field configurationPropertiesField = configurationProvider.getClass().getDeclaredField("configurationProperties");
+      configurationPropertiesField.setAccessible(true);
+      configurationPropertiesField.set(configurationProvider, configurationProperties);
+      return configurationProvider;
+    });
 
     initialiseIfNeeded(provider);
     startIfNeeded(provider);
