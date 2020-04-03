@@ -30,6 +30,7 @@ import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.api.meta.model.config.ConfigurationModel;
 import org.mule.runtime.core.api.Injector;
 import org.mule.runtime.core.api.MuleContext;
+import org.mule.runtime.core.api.config.MuleConfiguration;
 import org.mule.runtime.extension.api.annotation.param.Config;
 import org.mule.runtime.extension.api.runtime.config.ConfigurationProvider;
 
@@ -52,7 +53,10 @@ public class XmlSdkConfigurationProviderLifecycleTestCase {
 
     final Injector injector = mock(Injector.class);
     final MuleContext muleContext = mock(MuleContext.class);
+    final MuleConfiguration muleConfiguration = mock(MuleConfiguration.class);
+    when(muleConfiguration.isLazyInit()).thenReturn(true);
     when(muleContext.getInjector()).thenReturn(injector);
+    when(muleContext.getConfiguration()).thenReturn(muleConfiguration);
 
     ConfigurationProvider innerProvider = mock(ConfigurationProvider.class, withSettings().extraInterfaces(Lifecycle.class));
 
@@ -60,18 +64,6 @@ public class XmlSdkConfigurationProviderLifecycleTestCase {
 
     XmlSdkConfigurationProvider provider =
         new XmlSdkConfigurationProvider(name, innerConfigProviders, emptyMap(), extensionModel, configurationModel, muleContext);
-
-    ConfigurationProperties configurationProperties = mock(ConfigurationProperties.class);
-
-    when(configurationProperties.resolveBooleanProperty(eq(MULE_LAZY_INIT_DEPLOYMENT_PROPERTY))).thenReturn(Optional.of(true));
-
-    when(injector.inject(eq(provider))).then(s -> {
-      ConfigurationProvider configurationProvider = s.getArgument(0);
-      Field configurationPropertiesField = configurationProvider.getClass().getDeclaredField("configurationProperties");
-      configurationPropertiesField.setAccessible(true);
-      configurationPropertiesField.set(configurationProvider, configurationProperties);
-      return configurationProvider;
-    });
 
     initialiseIfNeeded(provider);
     startIfNeeded(provider);
